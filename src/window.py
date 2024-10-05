@@ -7,14 +7,22 @@ from src.camera import Camera
 # Root 2 is used very often, so this will save a bit of performance.
 SQRT2 = math.sqrt(2)
 
+# Used for zoom keys. Prevents zooming in/out many times when the up/down button is held down.
+UP_RELEASED = True
+DOWN_RELEASED = True
+
 def show_window(resolution, simulation):
     # Init pygame.
     pygame.init()
+    
+    # Initialize font.
+    font = pygame.freetype.SysFont("Courier New", 16)
     
     # Create display.
     display = pygame.display.set_mode(resolution)
     pygame.display.set_caption("Spontaneous Crystallization")
     
+    # Initialize camera.
     camera = Camera()
     
     # Create clock and start main loop.
@@ -33,8 +41,9 @@ def show_window(resolution, simulation):
         keys_pressed = pygame.key.get_pressed()
         handle_inputs(keys_pressed, camera, delta=0.01)
         
-        # Update simulation.
+        # Update simulation and camera.
         simulation.update(delta=0.01)
+        camera.update(delta=0.01)
         
         # Clear display.
         display.fill("black")
@@ -42,11 +51,18 @@ def show_window(resolution, simulation):
         # Render simulation in the middle of the screen.
         simulation.render(display, camera, position=(resolution[0] / 2, resolution[1] / 2))
         
+        # Render debug text.
+        render_text(display, font, f"Camera position: ({camera.get_position()[0]:.2f}, {camera.get_position()[1]:.2f})", (255, 0, 0), (10, 10))
+        render_text(display, font, f"Camera velocity: ({camera.get_velocity()[0]:.2f}, {camera.get_velocity()[1]:.2f})", (255, 0, 0), (10, 30))
+        render_text(display, font, f"Camera zoom: {camera.get_zoom():.2f} (target: {camera.get_zoom_target():.2f})", (255, 0, 0), (10, 50))
+        
         # Render frame and tick clock.
         pygame.display.flip()
         clock.tick(60)
 
 def handle_inputs(keys_pressed, camera, delta):
+    global UP_RELEASED, DOWN_RELEASED
+    
     # Get camera velocity in both directions.
     camera_velocity_x = 0
     camera_velocity_y = 0
@@ -68,4 +84,20 @@ def handle_inputs(keys_pressed, camera, delta):
     camera_velocity_y *= camera_speed
     
     # Move camera.
-    camera.move_by((camera_velocity_x * delta, camera_velocity_y * delta))
+    camera.set_velocity((camera_velocity_x, camera_velocity_y))
+    
+    # Handle camera zoom target.
+    if keys_pressed[pygame.K_UP] and UP_RELEASED:
+        camera.set_zoom_target(camera.get_zoom_target() * 2)
+        UP_RELEASED = False
+    if keys_pressed[pygame.K_DOWN] and DOWN_RELEASED:
+        camera.set_zoom_target(camera.get_zoom_target() / 2)
+        DOWN_RELEASED = False
+    
+    if not keys_pressed[pygame.K_UP]:
+        UP_RELEASED = True
+    if not keys_pressed[pygame.K_DOWN]:
+        DOWN_RELEASED = True
+
+def render_text(display, font, text, color, position):
+    font.render_to(display, position, text, color)

@@ -23,6 +23,10 @@ class Simulation:
         
         # Render particles.
         for particle_position in self.particle_positions:
-            screen_x = position[0] - camera_position[0] + particle_position[0]
-            screen_y = position[1] - camera_position[1] + particle_position[1]
-            pygame.draw.circle(display, (255, 255, 255), (screen_x, screen_y), self.particle_radius * 10, width=1)
+            screen_x = position[0] + (particle_position[0] - camera_position[0]) * camera.get_zoom()
+            screen_y = position[1] + (particle_position[1] - camera_position[1]) * camera.get_zoom()
+            radius = self.particle_radius * camera.get_zoom()
+            # TODO: If radius is less than 0.5, use set_at instead.
+            if radius < 2:
+                radius = 2
+            pygame.draw.circle(display, (255, 255, 255), (screen_x, screen_y), radius, width=1)
