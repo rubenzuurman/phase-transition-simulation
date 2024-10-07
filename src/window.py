@@ -11,7 +11,7 @@ SQRT2 = math.sqrt(2)
 UP_RELEASED = True
 DOWN_RELEASED = True
 
-def show_window(resolution, simulation):
+def show_window(resolution, simulations):
     # Init pygame.
     pygame.init()
     
@@ -41,15 +41,17 @@ def show_window(resolution, simulation):
         keys_pressed = pygame.key.get_pressed()
         handle_inputs(keys_pressed, camera, delta=0.01)
         
-        # Update simulation and camera.
-        simulation.update(delta=0.01)
+        # Update simulations and camera.
+        for simulation in simulations:
+            simulation.update(delta=0.01)
         camera.update(delta=0.01)
         
         # Clear display.
         display.fill("black")
         
-        # Render simulation in the middle of the screen.
-        simulation.render(display, camera, position=(resolution[0] / 2, resolution[1] / 2))
+        # Render simulations at their respective positions.
+        for simulation in simulations:
+            simulation.render(display, camera, resolution)
         
         # Render debug text.
         render_text(display, font, f"Camera position: ({camera.get_position()[0]:.2f}, {camera.get_position()[1]:.2f})", (255, 0, 0), (10, 10))
