@@ -2,6 +2,12 @@
 11.01
 I've calculated the diffusion coefficient from the particles positions at every timestep (<R^2>/(4t)), and it does converge for five varying particle densities. Although fewer particles make the diffusion coefficient oscillate a lot more.
 
+11.23
+It doesn't matter what force function I use, as long as it's zero on average. For this reason I'm going to switch from generating random angles to choosing a random element from a list of four random fources, one for each direction. Since the probability of choosing either one is 1/4, the average force is still zero.
+
+13.08
+Replace force calculation with a simple list index, as described in the note above this. Also implemented an algorithm to check IF two lines intersect, which abstracts away any collision checking from the Simulation.update() function. This also has the added benefit that simulation borders can now have an arbitrary shape.
+
 07-10-2024
 18.03
 Just done implementing random forces in random direction each timestep, but the particles seem to pick up speed anyway. I calculate the average force in the x- and y-direction, and that converges to zero too. I suspect it's the Euler integration I'm using. I'll try velvet integration next.

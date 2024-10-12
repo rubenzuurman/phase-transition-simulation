@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import pygame
 
@@ -16,6 +18,12 @@ class Simulation:
         # Precalculate particle surface area.
         self.particle_surf_area = particle_radius * particle_radius * np.pi
         
+        # Calculate acceleration magnitude.
+        acceleration_magnitude = self.force_magnitude / self.particle_surf_area
+        
+        # Predefine list of possible accelerations.
+        self.possible_accelerations = [[acceleration_magnitude, 0], [-acceleration_magnitude, 0], [0, acceleration_magnitude], [0, -acceleration_magnitude]]
+        
         # Initialize list of particle positions and velocities.
         self.particle_positions_x = (np.random.rand(number_of_particles) * self.width) - (self.width / 2)
         self.particle_positions_y = (np.random.rand(number_of_particles) * self.width) - (self.width / 2)
@@ -30,15 +38,12 @@ class Simulation:
         self.time = 0
     
     def update(self, delta):
-        # Calculate acceleration magnitude.
-        acceleration_magnitude = self.force_magnitude / self.particle_surf_area
+        # Get list of random indices of the acceleration options list.
+        acceleration_vector_indices = np.random.choice([0, 1, 2, 3], size=self.number_of_particles)
         
-        # Generate list of random angles.
-        acceleration_thetas = np.random.rand(self.number_of_particles) * np.pi * 2
-        
-        # Generate normalized vectors in random directions, also multiplied by delta_time.
-        acceleration_x = np.cos(acceleration_thetas) * acceleration_magnitude * delta
-        acceleration_y = np.sin(acceleration_thetas) * acceleration_magnitude * delta
+        # Get x and y components from the acceleration vector indices list.
+        acceleration_x = [self.possible_accelerations[acc_index][0] for acc_index in acceleration_vector_indices]
+        acceleration_y = [self.possible_accelerations[acc_index][1] for acc_index in acceleration_vector_indices]
         
         # Add accelerations to velocities and velocities to positions.
         self.particle_velocities_x = np.add(self.particle_velocities_x, acceleration_x)
@@ -53,60 +58,24 @@ class Simulation:
                 new_position = (new_particle_x, new_particle_y)
                 
                 # Check left wall collision.
-                if new_particle_x < -self.width / 2:
-                    m, b = get_line_equation(p1=old_position, p2=new_position)
-                    left_wall_intersect_y = m * (-self.width / 2) + b
-                    if left_wall_intersect_y < -self.height / 2:
-                        # Intersection with bottom wall instead.
-                        self.particle_velocities_y[index] *= -1
-                    elif left_wall_intersect_y > self.height / 2:
-                        # Intersection with top wall instead.
-                        self.particle_velocities_y[index] *= -1
-                    else:
-                        # Intersection with left wall.
-                        self.particle_velocities_x[index] *= -1
+                left_wall = [(-self.width / 2, -self.height / 2), (-self.width / 2, self.height / 2)]
+                if check_two_lines_intersect(l1=left_wall, l2=[old_position, new_position]):
+                    self.particle_velocities_x[index] *= -1
                 
                 # Check right wall collision.
-                if new_particle_x > self.width / 2:
-                    m, b = get_line_equation(p1=old_position, p2=new_position)
-                    right_wall_intersect_y = m * (self.width / 2) + b
-                    if right_wall_intersect_y < -self.height / 2:
-                        # Intersection with bottom wall instead.
-                        self.particle_velocities_y[index] *= -1
-                    elif right_wall_intersect_y > self.height / 2:
-                        # Intersection with top wall instead.
-                        self.particle_velocities_y[index] *= -1
-                    else:
-                        # Intersection with right wall.
-                        self.particle_velocities_x[index] *= -1
+                right_wall = [(self.width / 2, -self.height / 2), (self.width / 2, self.height / 2)]
+                if check_two_lines_intersect(l1=right_wall, l2=[old_position, new_position]):
+                    self.particle_velocities_x[index] *= -1
                 
                 # Check bottom wall collision.
-                if new_particle_y < -self.height / 2:
-                    m, b = get_line_equation(p1=old_position, p2=new_position)
-                    bottom_wall_intersect_x = ((-self.height / 2) - b) / m
-                    if bottom_wall_intersect_x < -self.width / 2:
-                        # Intersection with left wall instead.
-                        self.particle_velocities_x[index] *= -1
-                    elif bottom_wall_intersect_x > self.width / 2:
-                        # Intersection with right wall instead.
-                        self.particle_velocities_x[index] *= -1
-                    else:
-                        # Intersect with bottom wall.
-                        self.particle_velocities_y[index] *= -1
+                bottom_wall = [(-self.width / 2, -self.height / 2), (self.width / 2, -self.height / 2)]
+                if check_two_lines_intersect(l1=bottom_wall, l2=[old_position, new_position]):
+                    self.particle_velocities_y[index] *= -1
                 
                 # Check top wall collision.
-                if new_particle_y > self.height / 2:
-                    m, b = get_line_equation(p1=old_position, p2=new_position)
-                    top_wall_intersect_x = ((self.height / 2) - b) / m
-                    if top_wall_intersect_x < -self.width / 2:
-                        # Intersection with left wall instead.
-                        self.particle_velocities_x[index] *= -1
-                    elif top_wall_intersect_x > self.width / 2:
-                        # Intersection with right wall instead.
-                        self.particle_velocities_x[index] *= -1
-                    else:
-                        # Intersect with top wall.
-                        self.particle_velocities_y[index] *= -1
+                top_wall = [(-self.width / 2, self.height / 2), (self.width / 2, self.height / 2)]
+                if check_two_lines_intersect(l1=top_wall, l2=[old_position, new_position]):
+                    self.particle_velocities_y[index] *= -1
         
         # Add the final particle velocities to the particle positions.
         self.particle_positions_x = np.add(self.particle_positions_x, self.particle_velocities_x * delta)
@@ -169,8 +138,70 @@ class Simulation:
             render_text(display, selected_font, f"Number of particles: {self.number_of_particles}", (0, 255, 0), (screen_topleft_x + font_render_height, screen_topleft_y + font_render_height))
             render_text(display, selected_font, f"Diffusion coefficient: {self.diffusion_coefficient:.2f}", (0, 255, 0), (screen_topleft_x + font_render_height, screen_topleft_y + font_render_height * 3))
 
+def check_two_lines_intersect(l1, l2):
+    """
+    Expects l1 and l2 to be 1D lists containing two pairs each, one for the start of the line and one for the end of the line.
+    Example: l1=[(start_x, start_y), (end_x, end_y)], l2=[(start_x, start_y), (end_x, end_y)]
+    Returns a boolean indicating whether or not there has been an intersection.
+    """
+    # Get start and end points from lines.
+    l1_start, l1_end = l1
+    l2_start, l2_end = l2
+    
+    # Calculate coordinate transformation matrix from the angle of l1.
+    l1_angle = math.atan2(l1_end[1] - l1_start[1], l1_end[0] - l1_start[0])
+    rotation_angle = math.pi / 2 - l1_angle
+    rotation_matrix = np.array([[math.cos(rotation_angle), -math.sin(rotation_angle)], [math.sin(rotation_angle), math.cos(rotation_angle)]])
+    
+    # Apply coordinate transformation to both l1 and l2 such that l1 is vertical.
+    l1_start_rot = np.dot(rotation_matrix, l1_start)
+    l1_end_rot = np.dot(rotation_matrix, l1_end)
+    l2_start_rot = np.dot(rotation_matrix, l2_start)
+    l2_end_rot = np.dot(rotation_matrix, l2_end)
+    
+    # If l2 is vertical, then no intersection exists unless l1_start_x==l2_start_x and (l2_start_y in range of l1 y or l2_end_y in range of l1 y) OR (l1_start_y in range of l2 y or l1_end_y in range of l2 y).
+    if l2_start_rot[0] == l2_end_rot[0]:
+        # Not the same x coordinate -> return False.
+        if not (l1_start_rot[0] == l2_start_rot[0]):
+            return False
+        
+        # Check if either l2_start or l2_end is within the y range of l1.
+        l1_min_y = min(l1_start_rot[1], l1_end_rot[1])
+        l1_max_y = max(l1_start_rot[1], l1_end_rot[1])
+        l2_start_in_y_range = l2_start_rot[1] >= l1_min_y and l2_start_rot[1] <= l1_max_y
+        l2_end_in_y_range   = l2_end_rot[1] >= l1_min_y and l2_end_rot[1] <= l1_max_y
+        
+        # Check if either l1_start of l1_end is within the y_range of l2.
+        l2_min_y = min(l2_start_rot[1], l2_end_rot[1])
+        l2_max_y = max(l2_start_rot[1], l2_end_rot[1])
+        l1_start_in_y_range = l1_start_rot[1] >= l2_min_y and l1_start_rot[1] <= l2_max_y
+        l1_end_in_y_range   = l1_end_rot[1] >= l2_min_y and l1_end_rot[1] <= l2_max_y
+        
+        # Return true if either start or end of either line is inside the other one.
+        return l2_start_in_y_range or l2_end_in_y_range or l1_start_in_y_range or l1_end_in_y_range
+    
+    # Check if the start of l2 and the end of l2 are on opposite sides of l1 (note: l1 is vertical after the rotation).
+    l2_start_left = l1_start_rot[0] - l2_start_rot[0] > 0
+    l2_end_left = l1_start_rot[0] - l2_end_rot[0] > 0
+    if l2_start_left == l2_end_left:
+        return False
+    
+    # Get equation for l2.
+    m, b = get_line_equation(l2_start_rot, l2_end_rot)
+    
+    # Plug in the x coordinate of l1 (don't have to worry about m being infinite since the case where l2 is vertical is already checked).
+    y_intersect = m * l1_start_rot[0] + b
+    
+    # Check if the y coordinate of the intersection is in the y range of l1 (same as with vertical line, but single point).
+    l1_min_y = min(l1_start_rot[1], l1_end_rot[1])
+    l1_max_y = max(l1_start_rot[1], l1_end_rot[1])
+    return y_intersect >= l1_min_y and y_intersect <= l1_max_y
+
 def get_line_equation(p1, p2):
-    m = (p1[1] - p2[1]) / (p1[0] - p2[0])
+    if p1[0] == p2[0]:
+        m = np.inf
+    else:
+        m = (p1[1] - p2[1]) / (p1[0] - p2[0])
     b = p1[1] - m * p1[0]
     return m, b
 
