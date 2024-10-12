@@ -16,7 +16,7 @@ def show_window(resolution, simulations):
     pygame.init()
     
     # Initialize font.
-    font = pygame.freetype.SysFont("Courier New", 16)
+    font_dict = {n: pygame.freetype.SysFont("Courier New", n) for n in range(6, 18, 2)}
     
     # Create display.
     display = pygame.display.set_mode(resolution)
@@ -51,12 +51,12 @@ def show_window(resolution, simulations):
         
         # Render simulations at their respective positions.
         for simulation in simulations:
-            simulation.render(display, camera, resolution)
+            simulation.render(display, font_dict, camera, resolution)
         
         # Render debug text.
-        render_text(display, font, f"Camera position: ({camera.get_position()[0]:.2f}, {camera.get_position()[1]:.2f})", (255, 0, 0), (10, 10))
-        render_text(display, font, f"Camera velocity: ({camera.get_velocity()[0]:.2f}, {camera.get_velocity()[1]:.2f})", (255, 0, 0), (10, 30))
-        render_text(display, font, f"Camera zoom: {camera.get_zoom():.2f} (target: {camera.get_zoom_target():.2f})", (255, 0, 0), (10, 50))
+        render_text(display, font_dict[16], f"Camera position: ({camera.get_position()[0]:.2f}, {camera.get_position()[1]:.2f})", (255, 0, 0), (10, 10))
+        render_text(display, font_dict[16], f"Camera velocity: ({camera.get_velocity()[0]:.2f}, {camera.get_velocity()[1]:.2f})", (255, 0, 0), (10, 30))
+        render_text(display, font_dict[16], f"Camera zoom: {camera.get_zoom():.2f} (target: {camera.get_zoom_target():.2f})", (255, 0, 0), (10, 50))
         
         # Render frame and tick clock.
         pygame.display.flip()

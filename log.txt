@@ -1,0 +1,16 @@
+12-10-2024
+11.01
+I've calculated the diffusion coefficient from the particles positions at every timestep (<R^2>/(4t)), and it does converge for five varying particle densities. Although fewer particles make the diffusion coefficient oscillate a lot more.
+
+07-10-2024
+18.03
+Just done implementing random forces in random direction each timestep, but the particles seem to pick up speed anyway. I calculate the average force in the x- and y-direction, and that converges to zero too. I suspect it's the Euler integration I'm using. I'll try velvet integration next.
+
+20.03
+This stackoverflow answer suggests that I don't have to use some complicated function to generate a random force. Instead I could just choose the x- and y-direction randomly from -F and F, its average value would still be zero, but it would be much cheaper to run.
+
+21.04
+Maybe I could calculate the diffusion coefficient from the motion of some smaller region the middle to get an idea of if this is normal.
+
+21.09
+I could also just assume this is normal and implement elastic particle-particle collisions.
